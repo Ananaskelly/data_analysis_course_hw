@@ -54,13 +54,3 @@ def load_and_process(path, it=1):
         current_img = np.reshape(current_img[mask], (img_shape[0], img_shape[1] - i - 1))
 
     return img, current_img
-
-"""path = os.path.join(os.getcwd(), 'sample', 'pineapple.jpg')
-orig, res_img = load_and_process(path, 50)
-
-plt.figure(1)
-plt.subplot(211)
-plt.imshow(res_img, cmap='gray')
-plt.subplot(212)
-plt.imshow(orig, cmap='gray')
-plt.show()"""
