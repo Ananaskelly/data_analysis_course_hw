@@ -17,4 +17,4 @@ plt.imshow(orig, cmap='gray')
 plt.show()
 
 ex_time = time.time() - start_time
-# print('Time: ' + '{:f}'.format(ex_time))
+print('Time: ' + '{:f}'.format(ex_time))
