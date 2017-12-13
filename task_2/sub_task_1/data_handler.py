@@ -34,6 +34,12 @@ class DataHandler:
             one_hot_set.append(current)
         return np.array(one_hot_set)
 
+    def batch_to_one_hot(self, y_batch):
+        current = np.zeros((len(y_batch), self.CLASS_NUM))
+        for idx, sample in enumerate(y_batch):
+            current.itemset((idx, sample), 1)
+        return current
+
     def get_lst(self, x_set, y_set):
         X_lst = []
         y_lst = []
