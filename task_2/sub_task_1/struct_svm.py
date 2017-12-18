@@ -93,14 +93,15 @@ class StructSVM:
         S = np.dot(x, W) + b
 
         y_ = self.decoding(W, A, b, x, k)
-        y_ = self.dataset.batch_to_one_hot(y_)
-        loss = self.hamming_loss(y, y_)
-
-        S_ = S + int(loss != 0)
+        # y_ = self.dataset.batch_to_one_hot(y_)
+        # loss = self.hamming_loss(y, y_)
+        s_m = np.ones(shape=(n, k))
+        s_m -= y
+        S_ = S + s_m
 
         edges = make_grid_edges(S_.reshape(1, n, k))
         pairwise = A
-        unaries = S
+        unaries = S_
 
         # decoding
         y = inference_dispatch(unaries, pairwise, edges, inference_method='ad3')
