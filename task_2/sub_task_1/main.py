@@ -25,16 +25,16 @@ def run_struct():
     simple_classifier = struct_svm.StructSVM(dh)
     simple_classifier.train()
 
-    """X_test, y_test = dh.get_lst_test()
+    X_test, y_test = dh.get_test_set_one_hot()
     n = len(X_test)
     score = 0
     for idx, x in enumerate(X_test):
         pred = simple_classifier.get_prediction(x)
 
-        if pred == y_test[idx]:
-            score += 1
+        print(pred)
+        print(y_test[idx])
 
-    print('Accuracy: {}'.format(score / n))"""
+    # print('Accuracy: {}'.format(score / n))
 
 # run_simple()
 run_struct()

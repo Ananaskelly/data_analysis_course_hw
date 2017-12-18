@@ -21,6 +21,7 @@ class DataHandler:
         self.train_num = len(self.X_train)
 
         self.y_one_hot_train = self.to_one_hot(self.y_train)
+        self.y_one_hot_test = self.to_one_hot(self.y_test)
 
         self.X_lst_train, self.y_lst_train = self.get_lst(self.X_train, self.y_train)
         self.X_lst_test, self.y_lst_test = self.get_lst(self.X_test, self.y_test)
@@ -60,6 +61,9 @@ class DataHandler:
 
     def get_train_set_one_hot(self):
         return self.X_train, self.y_one_hot_train
+
+    def get_test_set_one_hot(self):
+        return self.X_test, self.y_one_hot_test
 
     def get_lst_train(self):
         return self.X_lst_train, self.y_lst_train
