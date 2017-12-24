@@ -39,6 +39,17 @@ def run_struct():
     ssvm = struct_svm.StructSVM(X, y, y_one_hot, class_num, dim)
     ssvm.train(0.1)
 
+    x_test, y_test = dh.get_test_set()
+
+    mean_loss = 0
+    for idx, sample in enumerate(x_test):
+        y_pred = ssvm.get_prediction(sample)
+        print(y)
+        print(y_pred)
+        mean_loss += ssvm.hamming_loss_(y_test[idx], y_pred)
+
+    print("Mean loss: {}".format(mean_loss/x_test.shape[0]))
+
     A_matrix = ssvm.A_matrix
     plt.matshow(A_matrix, vmin=-1, vmax=1)
     plt.colorbar()
