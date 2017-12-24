@@ -1,21 +1,31 @@
 import numpy as np
 import math
+
+from task_2.sub_task_1 import utils
 from pystruct.inference import inference_dispatch, compute_energy
 from pystruct.utils import make_grid_edges
 
 np.set_printoptions(threshold=math.nan)
-EPOCH = 5
-LEARNING_RATE = 0.01
+EPOCH = 10
+# LEARNING_RATE = 0.1
+REG_STEP = 1e-6
 
 
 class StructSVM:
 
-    def __init__(self, data_handler):
-        self.dataset = data_handler
-        self.k = data_handler.CLASS_NUM
-        self.W = np.random.randn(self.dataset.DIM, self.dataset.CLASS_NUM)
-        self.A = np.random.randn(self.dataset.CLASS_NUM, self.dataset.CLASS_NUM)
-        self.b = np.random.randn(self.dataset.CLASS_NUM)
+    def __init__(self, X, y, y_one_hot, class_num, dim):
+        self.X = X
+        self.y = y
+        self.y_one_hot = y_one_hot
+        self.dim = dim
+        self.k = class_num
+        self.W = np.random.randn(self.dim, self.k)*0.01
+        self.A = np.random.randn(self.k, self.k)*0.01
+        self.b = np.zeros(self.k)
+
+    @property
+    def A_matrix(self):
+        return self.A
 
     def zero_one_loss(self, y, pred):
         for idx, value in enumerate(y):
@@ -26,55 +36,61 @@ class StructSVM:
 
     def hamming_loss(self, y, pred):
         score = 0
+        y_length = y.shape[0]
         for idx, values in enumerate(y):
             for idx2, value in enumerate(values):
                 if value != pred[idx][idx2]:
                     score += 1
                     break
-        return score
+        return float(score)/y_length
 
-    def hamming_loss_v(self, y, pred):
-        score = np.zeros(self.dataset.CLASS_NUM)
-        for idx, values in enumerate(y):
-            for idx2, value in enumerate(values):
-                if value != pred[idx][idx2]:
-                    score[idx] = 1
-                    break
-        return score
+    def hamming_loss_(self, y, pred):
+        score = 0
+        y_length = y.shape[0]
+        for idx, value in enumerate(y):
+            if value != pred[idx]:
+                score += 1
+        return float(score)/y_length
 
-    def train(self, reg_step=0.001):
+    def train(self, rate, batch_size=128):
 
-        X_set, y_set = self.dataset.get_train_set_one_hot()
-        X_set, y_set_s = self.dataset.get_train_set()
         for i in range(EPOCH):
-            for idx, samples in enumerate(X_set):
+            print("---------- Epoch {} ----------".format(i))
+            current_loss = 0
+            acc_grad = 0
+            for idx, samples in enumerate(self.X):
                 x = samples
-                y = y_set[idx]
+                y = self.y_one_hot[idx]
                 y_ = self.loss_augmented_decoding(self.W, self.A, self.b, x, y, self.k)
-                y_s = y_
-                y_ = self.dataset.batch_to_one_hot(y_)
+                y_ = utils.batch_to_one_hot(y_, self.k)
                 loss = self.hamming_loss(y, y_)
-                print("length: {}, loss {}".format(y_.shape[0], loss))
-                S = np.dot(x, self.W) + self.b
-                n, dim = x.shape[0], x.shape[1]
-                edges = make_grid_edges(S.reshape(1, n, self.k))
-                pairwise = self.A
-                unaries = S
-                # phi_y = self.get_phi_matrix(y, x)
-                # phi_y_ = self.get_phi_matrix(y_, x)
-                phi_y = compute_energy(unaries, pairwise, edges, y_set_s[idx])
-                phi_y_ = compute_energy(unaries, pairwise, edges, y_s)
-                grad = phi_y_ - phi_y
-                print(grad)
-                flatten_w = np.hstack((self.W.flatten(), self.A.flatten(), self.b))
+                current_loss += loss
+                if loss > 0 or (loss == 0 and idx % batch_size == 0):
+                    phi_y = self.get_phi_matrix(y, x)
+                    phi_y_ = self.get_phi_matrix(y_, x)
 
-                flatten_w -= LEARNING_RATE*(reg_step*flatten_w + grad)
+                    grad = phi_y_ - phi_y
+                    acc_grad += grad
+                    if idx % batch_size == 0:
+                        flatten_w = np.hstack((self.W.T.flatten(), self.A.T.flatten(), self.b))
+                        flatten_w -= rate*acc_grad - REG_STEP*np.linalg.norm(flatten_w)
+                        br = self.k*self.dim
+                        self.W = np.reshape(flatten_w[:br], newshape=(self.k, self.dim)).T
+                        br1 = self.k*self.k
+                        self.A = np.reshape(flatten_w[br:br+br1], newshape=(self.k, self.k)).T
+                        self.b = flatten_w[br+br1:]
 
-                br = self.dataset.CLASS_NUM*self.dataset.DIM
-                self.W = np.reshape(flatten_w[:br], newshape=(self.dataset.DIM, self.dataset.CLASS_NUM))
-                br1 = self.dataset.CLASS_NUM*self.dataset.CLASS_NUM
-                self.A = np.reshape(flatten_w[br:br+br1], newshape=(self.dataset.CLASS_NUM, self.dataset.CLASS_NUM))
-                self.b = flatten_w[br+br1:]
+                        acc_grad = 0
+            print(self.A)
+            print("Current loss: {}".format(current_loss/self.X.shape[0]))
+            num_ex = len(self.X)
+            perm = np.arange(num_ex)
+            np.random.shuffle(perm)
+            self.X = self.X[perm]
+            self.y = self.y[perm]
+            self.y_one_hot = self.y_one_hot[perm]
+            if i % 3 == 0 and rate > 1e-4:
+                rate *= 0.5
 
     def get_phi_matrix(self, y, x):
         n, y_d = y.shape
@@ -87,11 +103,7 @@ class StructSVM:
             if idx != n-1:
                 m2 += np.matmul(v[:, np.newaxis], y[idx+1][np.newaxis, :])
             m3 += v
-
         return np.hstack((m1.flatten(), m2.flatten(), m3))
-
-    def get_prediction(self, x):
-        return self.decoding(self.W, self.A, self.b, x, self.k)
 
     def decoding(self, W, A, b, x, k):
 
@@ -103,7 +115,6 @@ class StructSVM:
         pairwise = A
         unaries = S
 
-        # decoding
         y = inference_dispatch(unaries, pairwise, edges, inference_method='ad3')
 
         return y
@@ -113,18 +124,18 @@ class StructSVM:
         n, dim = x.shape[0], x.shape[1]
         S = np.dot(x, W) + b
 
-        y_ = self.decoding(W, A, b, x, k)
-        # y_ = self.dataset.batch_to_one_hot(y_)
-        # loss = self.hamming_loss(y, y_)
         s_m = np.ones(shape=(n, k))
         s_m -= y
         S_ = S + s_m
 
-        edges = make_grid_edges(S_.reshape(1, n, k))
+        edges = make_grid_edges(S.reshape(1, n, k))
         pairwise = A
         unaries = S_
 
         # decoding
-        y = inference_dispatch(unaries, pairwise, edges, inference_method='ad3')
+        ans = inference_dispatch(unaries, pairwise, edges, inference_method='ad3')
 
-        return y
+        return ans
+
+    def get_prediction(self, x):
+        return self.decoding(self.W, self.A, self.b, x, self.k)

@@ -16,6 +16,13 @@ class DataHandler:
         self.X_train, self.X_test = X[folds == 1], X[folds != 1]
         self.y_train, self.y_test = y[folds == 1], y[folds != 1]
 
+        # shuffle
+        num_ex = len(self.X_train)
+        perm = np.arange(num_ex)
+        np.random.shuffle(perm)
+        self.X_train = self.X_train[perm]
+        self.y_train = self.y_train[perm]
+
         self.DIM = self.X_train[0].shape[1]
         self.test_num = len(self.X_test)
         self.train_num = len(self.X_train)
@@ -23,25 +30,31 @@ class DataHandler:
         self.y_one_hot_train = self.to_one_hot(self.y_train)
         self.y_one_hot_test = self.to_one_hot(self.y_test)
 
-        self.X_lst_train, self.y_lst_train = self.get_lst(self.X_train, self.y_train)
-        self.X_lst_test, self.y_lst_test = self.get_lst(self.X_test, self.y_test)
+        self.X_lst_train, self.y_lst_train = self._get_lst(self.X_train, self.y_train)
+        self.X_lst_test, self.y_lst_test = self._get_lst(self.X_test, self.y_test)
+
+    @property
+    def dictionary(self):
+        return self.dict
+
+    @property
+    def dim(self):
+        return self.DIM
+
+    @property
+    def class_num(self):
+        return self.CLASS_NUM
 
     def to_one_hot(self, y_set):
         one_hot_set = []
-        for idx, samples in enumerate(y_set):
+        for samples in y_set:
             current = np.zeros((len(samples), self.CLASS_NUM))
             for idx, sample in enumerate(samples):
                 current.itemset((idx, sample), 1)
             one_hot_set.append(current)
         return np.array(one_hot_set)
 
-    def batch_to_one_hot(self, y_batch):
-        current = np.zeros((len(y_batch), self.CLASS_NUM))
-        for idx, sample in enumerate(y_batch):
-            current.itemset((idx, sample), 1)
-        return current
-
-    def get_lst(self, x_set, y_set):
+    def _get_lst(self, x_set, y_set):
         X_lst = []
         y_lst = []
         for samples in x_set:
@@ -61,6 +74,9 @@ class DataHandler:
 
     def get_train_set_one_hot(self):
         return self.X_train, self.y_one_hot_train
+
+    def get_test_set(self):
+        return self.X_test, self.y_test
 
     def get_test_set_one_hot(self):
         return self.X_test, self.y_one_hot_test
