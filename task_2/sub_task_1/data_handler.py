@@ -60,7 +60,6 @@ class DataHandler:
         for samples in x_set:
             for sample in samples:
                 X_lst.append(sample)
-
         for samples in y_set:
             for sample in samples:
                 y_lst.append(sample)

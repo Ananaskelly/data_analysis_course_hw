@@ -55,6 +55,14 @@ class StructSVM:
         #return score
         return float(score)/y_length
 
+    def hamming_loss_base(self, y, pred):
+        score = 0
+        y_length = y.shape[0]
+        for idx, value in enumerate(y):
+            if value != pred[idx]:
+                score += 1
+        return score
+
     def loss(self, y, pred):
         score = 0
         y_length = y.shape[0]
@@ -84,7 +92,8 @@ class StructSVM:
         edges = make_grid_edges(S.reshape(1, n, self.k))
         pairwise = A
         unaries = S
-        loss = self.hamming_loss_(y_true_labels, y_pred)
+        loss = self.hamming_loss_base(y_true_labels, y_pred)
+
         score_y = compute_energy(unaries, pairwise, edges, y_true_labels)
         score_y_pred = compute_energy(unaries, pairwise, edges, y_pred)
 
@@ -126,7 +135,7 @@ class StructSVM:
         return 1/n*grad + flatten_w*REG_STEP
 
     def check_grad(self):
-        n = 10
+        n = 30
         x_samples = self.X[:n]
         y_samples = self.y[:n]
         y_one_hot_samples = self.y_one_hot[:n]
@@ -134,7 +143,8 @@ class StructSVM:
         n_grad = self.numerical_grad(x_samples, y_samples, y_one_hot_samples)
         a_grad = self.analytical_grad(x_samples, y_samples, y_one_hot_samples)
         diff = np.linalg.norm(n_grad - a_grad) / np.linalg.norm(n_grad + a_grad)
-        print(diff)
+
+        return diff, n_grad, a_grad
 
     def train(self, rate=0.1, reg_step=REG_STEP, batch_size=128):
 

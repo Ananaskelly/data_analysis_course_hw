@@ -35,16 +35,16 @@ def run_struct():
     #################################################################
     # get optimal learning rate with k-fold cross-validation
 
-    alphas = [10**(-i) for i in range(1, 6)]
-    classifier = lambda X, y, y_: struct_svm.StructSVM(X, y, y_, dh.CLASS_NUM, dh.DIM)
-    opt_alpha_idx = utils.k_fold_validation(X, y, alphas, 3, classifier, y_one_hot, True)
-    print('Optimal regularization coefficient: {0}'.format(alphas[opt_alpha_idx]))
+    # alphas = [10**(-i) for i in range(1, 6)]
+    # classifier = lambda X, y, y_: struct_svm.StructSVM(X, y, y_, dh.CLASS_NUM, dh.DIM)
+    # opt_alpha_idx = utils.k_fold_validation(X, y, alphas, 3, classifier, y_one_hot, True)
+    # print('Optimal regularization coefficient: {0}'.format(alphas[opt_alpha_idx]))
 
     #################################################################
 
     ssvm = struct_svm.StructSVM(X, y, y_one_hot, class_num, dim)
-    # ssvm.check_grad()
-    ssvm.train(reg_step=alphas[opt_alpha_idx])
+    ssvm.check_grad()
+    """ssvm.train(reg_step=alphas[opt_alpha_idx])
 
     x_test, y_test = dh.get_test_set()
 
@@ -61,7 +61,7 @@ def run_struct():
     plt.title("A_matrix visualization")
     plt.xticks(np.arange(25), dh.dictionary)
     plt.yticks(np.arange(25), dh.dictionary)
-    plt.show()
+    plt.show()"""
 
 
 def run_simple():
