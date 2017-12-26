@@ -1,4 +1,4 @@
-from task_1 import resize_util
+from task_0 import resize_util
 import matplotlib.pyplot as plt
 import os
 import time
