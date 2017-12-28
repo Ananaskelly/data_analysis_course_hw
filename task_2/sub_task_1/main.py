@@ -43,7 +43,7 @@ def run_struct():
     #################################################################
 
     ssvm = struct_svm.StructSVM(X, y, y_one_hot, class_num, dim)
-    ssvm.check_grad()
+    ssvm.check_grad(3, 10)
     """ssvm.train(reg_step=alphas[opt_alpha_idx])
 
     x_test, y_test = dh.get_test_set()
