@@ -10,7 +10,7 @@ from scipy.linalg import norm
 
 
 np.set_printoptions(threshold=math.nan)
-EPOCH = 10
+EPOCH = 15
 LEARNING_RATE = 1
 REG_STEP = 1e-6
 
@@ -23,9 +23,9 @@ class StructSVM:
         self.y_one_hot = y_one_hot
         self.dim = dim
         self.k = class_num
-        self.W = np.random.randn(self.dim, self.k)*0.01
-        self.A = np.random.randn(self.k, self.k)*0.01
-        self.b = np.zeros(self.k)
+        self.W = np.random.randn(self.dim, self.k)*0.1
+        self.A = np.random.randn(self.k, self.k)*0.1
+        self.b = np.random.rand(self.k)*0.1
 
     @property
     def A_matrix(self):
@@ -223,7 +223,7 @@ class StructSVM:
         for idx, v in enumerate(y):
             m1 += np.matmul(v[:, np.newaxis], x[idx][np.newaxis, :])
             if idx != n-1:
-                m2 += np.matmul(v[:, np.newaxis], y[idx+1][np.newaxis, :])
+                m2 += np.matmul(y[idx+1][:, np.newaxis], v[np.newaxis, :])
             m3 += v
         return np.concatenate((m1.ravel(), m2.ravel(), m3), axis=0)
 

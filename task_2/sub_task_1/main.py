@@ -43,8 +43,17 @@ def run_struct():
     #################################################################
 
     ssvm = struct_svm.StructSVM(X, y, y_one_hot, class_num, dim)
-    ssvm.check_grad(3, 10)
-    """ssvm.train(reg_step=alphas[opt_alpha_idx])
+    diff = ssvm.check_grad(3, 10)
+    print(diff)
+    ssvm.train(reg_step=1e-5)
+
+    A_matrix = ssvm.A_matrix
+    plt.matshow(A_matrix)
+    plt.colorbar()
+    plt.title("A_matrix visualization")
+    plt.xticks(np.arange(25), dh.dictionary)
+    plt.yticks(np.arange(25), dh.dictionary)
+    plt.show()
 
     x_test, y_test = dh.get_test_set()
 
@@ -54,14 +63,6 @@ def run_struct():
         mean_loss += ssvm.hamming_loss_(y_test[idx], y_pred)
 
     print("Mean loss: {}".format(mean_loss/x_test.shape[0]))
-
-    A_matrix = ssvm.A_matrix
-    plt.matshow(A_matrix)
-    plt.colorbar()
-    plt.title("A_matrix visualization")
-    plt.xticks(np.arange(25), dh.dictionary)
-    plt.yticks(np.arange(25), dh.dictionary)
-    plt.show()"""
 
 
 def run_simple():
