@@ -1,12 +1,12 @@
 import numpy as np
 import random
 import math
+import time
 
 from task_2.sub_task_1 import utils
-from pystruct.inference import inference_dispatch, compute_energy
+from pystruct.inference import compute_energy
 from pystruct.inference.inference_methods import inference_max_product
 from pystruct.utils import make_grid_edges
-from scipy.linalg import norm
 
 
 np.set_printoptions(threshold=math.nan)
@@ -23,6 +23,7 @@ class StructSVM:
         self.y_one_hot = y_one_hot
         self.dim = dim
         self.k = class_num
+        self.A_trainable = True
         self.W = np.random.randn(self.dim, self.k)*0.1
         self.A = np.random.randn(self.k, self.k)*0.1
         self.b = np.random.rand(self.k)*0.1
@@ -31,12 +32,9 @@ class StructSVM:
     def A_matrix(self):
         return self.A
 
-    def zero_one_loss(self, y, pred):
-        for idx, value in enumerate(y):
-            if value != pred[idx]:
-                return 1
-
-        return 0
+    def set_A_not_trainable(self):
+        self.A_trainable = False
+        self.A = np.zeros((self.k, self.k))
 
     def hamming_loss(self, y, pred):
         score = 0
@@ -138,7 +136,7 @@ class StructSVM:
         n = x_samples.shape[0]
 
         flatten_w = np.hstack((W.T.flatten(), A.T.flatten(), b))
-        y_pred = [self.loss_augmented_decoding(W, A, b, x_samples[idx], y_one_hot_samples[idx], k)
+        y_pred = [self.loss_augmented_decoding(W, A, b, x_samples[idx], y_samples[idx], k)
                   for idx in range(n)]
 
         grad = np.zeros(dim*k+k*k+k)
@@ -185,22 +183,24 @@ class StructSVM:
             acc_grad = 0
             for idx, samples in enumerate(self.X):
                 x = samples
-                y = self.y_one_hot[idx]
+                y_one_hot = self.y_one_hot[idx]
+                y = self.y[idx]
                 y_ = self.loss_augmented_decoding(self.W, self.A, self.b, x, y, self.k)
                 y_ = utils.batch_to_one_hot(y_, self.k)
-                loss = self.hamming_loss(y, y_)
+                loss = self.hamming_loss(y_one_hot, y_)
                 current_loss += loss
                 if loss > 0 or (loss == 0 and idx % batch_size == 0):
 
-                    acc_grad += self.grad(y, y_, x)
+                    acc_grad += self.grad(y_one_hot, y_, x)
 
                     if idx % batch_size == 0:
                         flatten_w = np.hstack((self.W.T.flatten(), self.A.T.flatten(), self.b))
-                        flatten_w -= (rate*acc_grad + reg_step*flatten_w)
+                        flatten_w -= rate*(acc_grad + reg_step*flatten_w)
                         br = self.k*self.dim
                         self.W = np.reshape(flatten_w[:br], newshape=(self.k, self.dim)).T
                         br1 = self.k*self.k
-                        self.A = np.reshape(flatten_w[br:br+br1], newshape=(self.k, self.k)).T
+                        if self.A_trainable:
+                            self.A = np.reshape(flatten_w[br:br+br1], newshape=(self.k, self.k)).T
                         self.b = flatten_w[br+br1:]
 
                         acc_grad = 0
@@ -214,17 +214,38 @@ class StructSVM:
             if i % 3 == 0 and rate > 1e-5:
                 rate *= 0.5
 
-    def get_phi_matrix(self, y, x):
+    def get_phi_matrix_check_perfomance(self, y, x):
         n, y_d = y.shape
         _, x_d = x.shape
         m1 = np.zeros((y_d, x_d))
         m2 = np.zeros((y_d, y_d))
         m3 = np.zeros(y_d)
+        ex_1_time = time.time()
         for idx, v in enumerate(y):
             m1 += np.matmul(v[:, np.newaxis], x[idx][np.newaxis, :])
             if idx != n-1:
-                m2 += np.matmul(y[idx+1][:, np.newaxis], v[np.newaxis, :])
+                m2 += np.matmul(y[idx + 1][:, np.newaxis], v[np.newaxis, :])
             m3 += v
+        print(time.time() - ex_1_time)
+        m1 = np.zeros((y_d, x_d))
+        m2 = np.zeros((y_d, y_d))
+        m3 = np.zeros(y_d)
+        ex_2_time = time.time()
+        m3 = np.sum(y, axis=0).T
+        m2 = np.dot(y.T, y).flatten()
+        m1 = np.dot(y.T, x).flatten()
+        print(time.time() - ex_2_time)
+
+        """ex_3_time = time.time()
+        m1 = np.zeros((y_d, x_d))
+        m2 = np.zeros((y_d, y_d))
+        m3 = np.zeros(y_d)"""
+
+    def get_phi_matrix(self, y, x):
+
+        m3 = np.sum(y, axis=0).T
+        m2 = np.dot(y.T, y).flatten()
+        m1 = np.dot(y.T, x).flatten()
         return np.concatenate((m1.ravel(), m2.ravel(), m3), axis=0)
 
     def decoding(self, W, A, b, x, k):
@@ -237,7 +258,7 @@ class StructSVM:
         pairwise = A
         unaries = S
 
-        y = inference_dispatch(unaries, pairwise, edges, inference_method='ad3')
+        y = inference_max_product(unaries, pairwise, edges)
 
         return y
 
@@ -245,9 +266,8 @@ class StructSVM:
 
         n, dim = x.shape[0], x.shape[1]
         S = np.dot(x, W) + b
-        s_m = np.ones(shape=(n, k))
-        s_m -= y
-        S_ = S + s_m
+        S_ = S
+        S_[range(n), y] -= 1
 
         edges = make_grid_edges(S.reshape(1, n, k))
         pairwise = A

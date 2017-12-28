@@ -5,7 +5,7 @@ from task_2.sub_task_1 import data_handler
 from task_2.sub_task_1 import utils
 from task_2.sub_task_1.peregudins_cube import one_vs_all_svm
 from task_2.sub_task_1.peregudins_cube import struct_svm
-from task_2.sub_task_1.peregudins_cube import simple_svm
+from task_2.sub_task_1.peregudins_cube import multiclass_svm
 
 
 def run_one_vs_all():
@@ -43,11 +43,12 @@ def run_struct():
     #################################################################
 
     ssvm = struct_svm.StructSVM(X, y, y_one_hot, class_num, dim)
-    diff = ssvm.check_grad(3, 10)
-    print(diff)
+    # diff, _, _ = ssvm.check_grad(3, 10)
+    # print(diff)
     ssvm.train(reg_step=1e-5)
 
     A_matrix = ssvm.A_matrix
+    A_matrix = A_matrix - np.max()
     plt.matshow(A_matrix)
     plt.colorbar()
     plt.title("A_matrix visualization")
@@ -70,13 +71,13 @@ def run_simple():
     X_train, y_train = dh.get_lst_train()
     X_train = np.array(X_train, dtype='int32')
     y_train = np.array(y_train, dtype='int32')
-    simple_classifier = simple_svm.SimpleSVM(X_train, y_train, dh.CLASS_NUM, dh.DIM)
+    simple_classifier = multiclass_svm.MulticlassSVM(X_train, y_train, dh.CLASS_NUM, dh.DIM)
 
     #################################################################
     # get optimal learning rate with k-fold cross-validation
 
     alphas = [10**(-i) for i in range(5)]
-    classifier = lambda X, y: simple_svm.SimpleSVM(X, y, dh.CLASS_NUM, dh.DIM)
+    classifier = lambda X, y: multiclass_svm.MulticlassSVM(X, y, dh.CLASS_NUM, dh.DIM)
     opt_alpha_idx = utils.k_fold_validation(X_train, y_train, alphas, 3, classifier)
     print('Optimal regularization coefficient: {0}'.format(alphas[opt_alpha_idx]))
 
