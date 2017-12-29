@@ -259,6 +259,7 @@ class StructSVM:
             if idx != n - 1:
                 m2 += np.matmul(y[idx + 1][:, np.newaxis], v[np.newaxis, :])
             m3 += v
+
         return np.concatenate((m1.ravel(), m2.ravel(), m3), axis=0)
 
     def decoding(self, W, A, b, x, k):
