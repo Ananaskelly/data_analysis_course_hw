@@ -92,7 +92,7 @@ class StructSVM:
         A = flatten_w[dim*k:dim*k+k*k].reshape(k, k).T
         b = flatten_w[dim*k+k*k:]
 
-        y_pred = self.loss_augmented_decoding(W, A, b, x, y_true, k)
+        y_pred = self.loss_augmented_decoding(W, A, b, x, y_true_labels, k)
         S = np.dot(x, W) + b
 
         edges = make_grid_edges(S.reshape(1, n, k))
@@ -235,17 +235,30 @@ class StructSVM:
         m2 = np.dot(y.T, y).flatten()
         m1 = np.dot(y.T, x).flatten()
         print(time.time() - ex_2_time)
-
-        """ex_3_time = time.time()
+        ex_3_time = time.time()
         m1 = np.zeros((y_d, x_d))
         m2 = np.zeros((y_d, y_d))
-        m3 = np.zeros(y_d)"""
+        m3 = np.zeros(y_d)
+        for idx, v in enumerate(y):
+            unic_v = np.nonzero(v)
+            m1[unic_v] += x[idx][np.newaxis, :]
+            if idx != n-1:
+                m2[np.nonzero(y[idx+1]), unic_v] += 1
+            m3[unic_v] += 1
+        print(time.time() - ex_3_time)
 
     def get_phi_matrix(self, y, x):
 
-        m3 = np.sum(y, axis=0).T
-        m2 = np.dot(y.T, y).flatten()
-        m1 = np.dot(y.T, x).flatten()
+        n, y_d = y.shape
+        _, x_d = x.shape
+        m1 = np.zeros((y_d, x_d))
+        m2 = np.zeros((y_d, y_d))
+        m3 = np.zeros(y_d)
+        for idx, v in enumerate(y):
+            m1 += np.matmul(v[:, np.newaxis], x[idx][np.newaxis, :])
+            if idx != n - 1:
+                m2 += np.matmul(y[idx + 1][:, np.newaxis], v[np.newaxis, :])
+            m3 += v
         return np.concatenate((m1.ravel(), m2.ravel(), m3), axis=0)
 
     def decoding(self, W, A, b, x, k):
