@@ -17,7 +17,7 @@ def ridge(A, b, alphas):
     return np.dot(d * U.T.dot(b), Vt).T
 
 
-def HuberLoss(w, X, y):
+def HuberLoss(w, X, y, alpha=0):
     a = y - np.dot(X, w)
     delta = 10
 
@@ -33,3 +33,29 @@ def HuberLoss(w, X, y):
 def lasso(w, alpha, X, y):
     a = y - np.dot(X, w)
     return np.linalg.norm(a) + np.sum(np.abs(w)) * alpha
+
+
+def mse(w, X, y):
+    prediction = np.dot(X, w)
+    return np.mean((y - prediction)**2)
+
+
+def k_fold_validation(x_val, y_val, alphas, k, get_weights, get_loss):
+
+    losses = []
+    batch = int(x_val.shape[0]/k)
+    for alpha in alphas:
+        mean_loss = 0
+        for idx in range(k):
+            test_set_x = x_val[idx*batch:(idx+1)*batch]
+            test_set_y = y_val[idx*batch:(idx+1)*batch]
+            train_set_x = np.concatenate((x_val[0:idx * batch], x_val[(idx + 1) * batch:]), axis=0)
+            train_set_y = np.concatenate((y_val[0:idx * batch], y_val[(idx + 1) * batch:]), axis=0)
+
+            weights = get_weights(train_set_x, train_set_y, alpha)
+            mean_loss += get_loss(weights, test_set_x, test_set_y)
+
+        print(mean_loss/k)
+        losses.append(mean_loss/k)
+
+    return np.argmin(losses)

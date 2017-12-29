@@ -31,3 +31,9 @@ class DataHandler:
 
     def get_robust_test_dataset(self):
         return self.X_robust[40:], self.Y_robust[40:]
+
+    def get_wine_train_dataset(self):
+        return self.X_red_wine[:478], self.Y_red_wine[:478]
+
+    def get_wine_test_dataset(self):
+        return self.X_red_wine[478:], self.Y_red_wine[478:]
