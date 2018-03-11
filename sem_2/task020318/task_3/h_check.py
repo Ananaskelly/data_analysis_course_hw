@@ -20,13 +20,13 @@ def ks_test_uniform(v, alpha):
     # эмпирическая функция распределения
     v_var = np.sort(v)
 
-    # теоритеческая
+    # теоритическая
     v_emp = np.arange(0, n)/n
     diff = np.abs(v_var - v_emp)
     d = np.max(diff)
 
-    lmbd = d * np.sqrt(n)
-    val = stats.ksone.ppf(1 - alpha, n)
+    lmbd = d * np.sqrt(n) + 1/(6*np.sqrt(n))
+    val = stats.kstwobign.ppf(alpha, n)
 
     print('lambda estimated: {}, table: {}'.format(lmbd, val))
     if lmbd < val:
@@ -46,16 +46,24 @@ def chi_sq_test(v, alpha, k):
     """
     v = np.asarray(v).flatten()
     n = v.shape[0]
-
+    # разделили на k интервалов
     hist, bins = np.histogram(v, k)
     dlt = bins[1] - bins[0]
+
     v_mean = np.sum(hist*bins[1:])/n
     v_mean_sq = np.sum(hist*bins[1:]**2)/n
     v_std = np.sqrt(v_mean_sq - v_mean**2)
     print('mean: {}, std: {}'.format(v_mean, v_std))
 
-    v_t = list(map(lambda x: n*dlt/v_std*norm_dist((x - v_mean)/v_std), bins[1:]))
+    v_t = list(map(lambda x: n*norm_dist((x - v_mean)/v_std)*dlt/v_std, bins[1:]))
     v_t = np.array(v_t)
     chi_sq = np.sum(np.divide((hist - v_t)**2, v_t))
 
-chi_sq_test(np.random.randn(42), 0.005, 7)
+    q_right = stats.chi.ppf(1 - alpha*0.5, k - 1)
+    q_left = stats.chi.ppf(alpha*0.5, k - 1)
+    print(chi_sq)
+    print(q_left, q_right)
+    if q_left < chi_sq < q_right or chi_sq < q_left:
+        print('Не можем отвергать H0')
+    else:
+        print('H0 отвергается')

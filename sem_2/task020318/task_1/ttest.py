@@ -34,12 +34,10 @@ def calc(alpha):
     t_value_left = stats.t.ppf(q=alpha*0.5, df=49)
     print("t-value (left) = %g" %round(t_value_left, 5))
 
-    t_value_right = stats.t.ppf(q=1-alpha*0.5,  #
-                df=49)  # число степеней свободы
+    t_value_right = stats.t.ppf(q=1-alpha*0.5, df=49)
     print("t-value (right) = %g" %round(t_value_right, 5))
 
-    p_val = stats.t.cdf(x= -2.5742,      # значение t-критерия, рассчитанное по эмпир.данным
-                   df= 49) * 2   # т.к. двусторонний критерий
+    p_val = stats.t.cdf(x= -2.5742, df= 49) * 2
     print("p-value = %g" %round(p_val, 3))
 
 
