@@ -6,7 +6,7 @@ def run():
     cool_grammar = nltk.CFG.fromstring("""
     S -> NP VP
     PP -> Det N
-    NP -> Det N | Det N PP | 'я'
+    NP -> Det N | PP PP | 'я'
     VP -> V NP | VP PP
     Det -> 'его' | 'своими'
     N -> 'семью' | 'глазами'
